@@ -37,8 +37,6 @@ cd src
 Справка о работе парсера:
 ```
 python main.py -h
-  или
-python main.py --help
 ```
 
 ____
