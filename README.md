@@ -38,7 +38,7 @@ cd src
 ```
 python main.py -h
 ```
-```
+или
 python main.py --help
 ```
 
