@@ -42,7 +42,7 @@ python main.py -h
 python main.py --help
 ```
 
-
+____
 ### Автор  
 Пётр Назаров  
 (https://github.com/Pnazarov86)
