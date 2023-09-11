@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 import re
 from urllib.parse import urljoin
@@ -7,18 +8,24 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
+from constants import DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
 from outputs import control_output
+from exceptions import ParserFindTagException
 from utils import find_tag, get_response
+
+
+def get_soup(session, url):
+    """Создание супа."""
+    response = get_response(session, url)
+    if response is None:
+        return None
+    return BeautifulSoup(response.text, features='lxml')
 
 
 def whats_new(session):
     """Парсинг обновлений документации Python."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
-    response = get_response(session, whats_new_url)
-    if response is None:
-        return
-    soup = BeautifulSoup(response.text, features='lxml')
+    soup = get_soup(session, whats_new_url)
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all(
@@ -32,8 +39,6 @@ def whats_new(session):
         version_link = urljoin(whats_new_url, href)
         response = get_response(session, version_link)
         if response is None:
-            # Если страница не загрузится,
-            # программа перейдёт к следующей ссылке.
             continue
         soup = BeautifulSoup(response.text, 'lxml')
         h1 = find_tag(soup, 'h1')
@@ -46,10 +51,7 @@ def whats_new(session):
 
 def latest_versions(session):
     """Парсинг версий документации Python."""
-    response = get_response(session, MAIN_DOC_URL)
-    if response is None:
-        return
-    soup = BeautifulSoup(response.text, features='lxml')
+    soup = get_soup(session, MAIN_DOC_URL)
     sidebar = find_tag(soup, 'div', {'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all('ul')
     for ul in ul_tags:
@@ -57,7 +59,7 @@ def latest_versions(session):
             a_tags = ul.find_all('a')
             break
     else:
-        raise Exception('Ничего не нашлось')
+        raise ParserFindTagException('Ничего не нашлось')
 
     results = [('Ссылка на документацию', 'Версия', 'Статус')]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
@@ -79,10 +81,7 @@ def latest_versions(session):
 def download(session):
     """Загружает документацию Python."""
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
-    response = get_response(session, downloads_url)
-    if response is None:
-        return
-    soup = BeautifulSoup(response.text, features='lxml')
+    soup = get_soup(session, downloads_url)
     main_tag = find_tag(soup, 'div', {'role': 'main'})
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
     pdf_a4_tag = find_tag(
@@ -91,9 +90,8 @@ def download(session):
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
-    downloads_dir = BASE_DIR / 'downloads'
-    downloads_dir.mkdir(exist_ok=True)
-    archive_path = downloads_dir / filename
+    DOWNLOADS_DIR.mkdir(exist_ok=True)
+    archive_path = DOWNLOADS_DIR / filename
     response = session.get(archive_url)
     with open(archive_path, 'wb') as file:
         file.write(response.content)
@@ -102,14 +100,11 @@ def download(session):
 
 def pep(session):
     """Парсинг статусов PEP."""
-    response = get_response(session, PEP_DOC_URL)
-    if response is None:
-        return
-    soup = BeautifulSoup(response.text, features='lxml')
+    soup = get_soup(session, PEP_DOC_URL)
     section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tbody_tag = find_tag(section_tag, 'tbody')
     tr_tags = tbody_tag.find_all('tr')
-    pep_count = {}
+    pep_count = defaultdict(int)
 
     results = [('Статус', 'Количество')]
     for tr_tag in tqdm(tr_tags):
