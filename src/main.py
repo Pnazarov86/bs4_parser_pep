@@ -1,6 +1,6 @@
-from collections import defaultdict
 import logging
 import re
+from collections import defaultdict
 from urllib.parse import urljoin
 
 import requests_cache
@@ -11,8 +11,8 @@ from configs import configure_argument_parser, configure_logging
 from constants import (
     BASE_DIR, DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
 )
-from outputs import control_output
 from exceptions import ParserFindTagException
+from outputs import control_output
 from utils import find_tag, get_response
 
 

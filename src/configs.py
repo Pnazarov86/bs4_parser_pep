@@ -2,9 +2,8 @@ import argparse
 import logging
 from logging.handlers import RotatingFileHandler
 
-from constants import (
-    DT_FORMAT, FILE_OUTPUT, LOG_DIR, LOG_FORMAT, PRETTY_OUTPUT
-)
+from constants import (DT_FORMAT, FILE_OUTPUT, LOG_DIR, LOG_FORMAT,
+                       PRETTY_OUTPUT)
 
 
 def configure_argument_parser(available_modes):
