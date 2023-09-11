@@ -9,8 +9,8 @@ DT_FORMAT = '%d.%m.%Y %H:%M:%S'
 PRETTY_OUTPUT = 'pretty'
 FILE_OUTPUT = 'file'
 LOG_DIR = BASE_DIR / 'logs'
-RESULTS_DIR = BASE_DIR / 'results'
-DOWNLOADS_DIR = BASE_DIR / 'downloads'
+RESULTS_DIR = 'results'
+DOWNLOADS_DIR = 'downloads'
 
 EXPECTED_STATUS = {
     'A': ('Active', 'Accepted'),

@@ -8,7 +8,9 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
+from constants import (
+    BASE_DIR, DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
+)
 from outputs import control_output
 from exceptions import ParserFindTagException
 from utils import find_tag, get_response
@@ -32,7 +34,7 @@ def whats_new(session):
         'li', attrs={'class': 'toctree-l1'}
     )
 
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
+    result = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python):
         version_a_tag = section.find('a')
         href = version_a_tag['href']
@@ -44,9 +46,9 @@ def whats_new(session):
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
-        results.append((version_link, h1.text, dl_text))
+        result.append((version_link, h1.text, dl_text))
 
-    return results
+    return result
 
 
 def latest_versions(session):
@@ -61,7 +63,7 @@ def latest_versions(session):
     else:
         raise ParserFindTagException('Ничего не нашлось')
 
-    results = [('Ссылка на документацию', 'Версия', 'Статус')]
+    result = [('Ссылка на документацию', 'Версия', 'Статус')]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
     for a_tag in a_tags:
         link = a_tag['href']
@@ -71,11 +73,11 @@ def latest_versions(session):
         else:
             version, status = a_tag.text, ''
 
-        results.append(
+        result.append(
             (link, version, status)
         )
 
-    return results
+    return result
 
 
 def download(session):
@@ -90,8 +92,9 @@ def download(session):
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
-    DOWNLOADS_DIR.mkdir(exist_ok=True)
-    archive_path = DOWNLOADS_DIR / filename
+    downloads_dir = BASE_DIR / DOWNLOADS_DIR
+    downloads_dir.mkdir(exist_ok=True)
+    archive_path = downloads_dir / filename
     response = session.get(archive_url)
     with open(archive_path, 'wb') as file:
         file.write(response.content)
@@ -106,7 +109,7 @@ def pep(session):
     tr_tags = tbody_tag.find_all('tr')
     pep_count = defaultdict(int)
 
-    results = [('Статус', 'Количество')]
+    result = [('Статус', 'Количество')]
     for tr_tag in tqdm(tr_tags):
         td_tag = find_tag(tr_tag, 'td')
         preview_status = td_tag.text[1:]
@@ -132,9 +135,9 @@ def pep(session):
                 f'{EXPECTED_STATUS[preview_status]}\n'
             )
     pep_count['Total'] = sum([value for value in pep_count.values()])
-    results.extend(pep_count.items())
+    result.extend(pep_count.items())
 
-    return results
+    return result
 
 
 MODE_TO_FUNCTION = {
