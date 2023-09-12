@@ -21,7 +21,7 @@ def whats_new(session):
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     soup = get_soup(session, whats_new_url)
     if soup is None:
-        return None
+        return
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all(
@@ -49,7 +49,7 @@ def latest_versions(session):
     """Парсинг версий документации Python."""
     soup = get_soup(session, MAIN_DOC_URL)
     if soup is None:
-        return None
+        return
     sidebar = find_tag(soup, 'div', {'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all('ul')
     for ul in ul_tags:
@@ -81,7 +81,7 @@ def download(session):
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     soup = get_soup(session, downloads_url)
     if soup is None:
-        return None
+        return
     main_tag = find_tag(soup, 'div', {'role': 'main'})
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
     pdf_a4_tag = find_tag(
@@ -103,7 +103,7 @@ def pep(session):
     """Парсинг статусов PEP."""
     soup = get_soup(session, PEP_DOC_URL)
     if soup is None:
-        return None
+        return
     section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tbody_tag = find_tag(section_tag, 'tbody')
     tr_tags = tbody_tag.find_all('tr')

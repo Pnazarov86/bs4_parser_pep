@@ -10,7 +10,7 @@ def get_soup(session, url):
     """Создание супа."""
     response = get_response(session, url)
     if response is None:
-        return None
+        return
     return BeautifulSoup(response.text, features='lxml')
 
 
