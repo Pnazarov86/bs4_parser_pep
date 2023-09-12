@@ -11,23 +11,17 @@ from configs import configure_argument_parser, configure_logging
 from constants import (
     BASE_DIR, DOWNLOADS_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL
 )
-from exceptions import ParserFindTagException
+from exceptions import ParserFindTagException, ParserDefinitionException
 from outputs import control_output
-from utils import find_tag, get_response
-
-
-def get_soup(session, url):
-    """Создание супа."""
-    response = get_response(session, url)
-    if response is None:
-        return None
-    return BeautifulSoup(response.text, features='lxml')
+from utils import find_tag, get_response, get_soup
 
 
 def whats_new(session):
     """Парсинг обновлений документации Python."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     soup = get_soup(session, whats_new_url)
+    if soup is None:
+        return None
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all(
@@ -54,6 +48,8 @@ def whats_new(session):
 def latest_versions(session):
     """Парсинг версий документации Python."""
     soup = get_soup(session, MAIN_DOC_URL)
+    if soup is None:
+        return None
     sidebar = find_tag(soup, 'div', {'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all('ul')
     for ul in ul_tags:
@@ -84,6 +80,8 @@ def download(session):
     """Загружает документацию Python."""
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     soup = get_soup(session, downloads_url)
+    if soup is None:
+        return None
     main_tag = find_tag(soup, 'div', {'role': 'main'})
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
     pdf_a4_tag = find_tag(
@@ -104,6 +102,8 @@ def download(session):
 def pep(session):
     """Парсинг статусов PEP."""
     soup = get_soup(session, PEP_DOC_URL)
+    if soup is None:
+        return None
     section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tbody_tag = find_tag(section_tag, 'tbody')
     tr_tags = tbody_tag.find_all('tr')
@@ -159,7 +159,12 @@ def main():
     if args.clear_cache:
         session.cache.clear()
     parser_mode = args.mode
-    results = MODE_TO_FUNCTION[parser_mode](session)
+    try:
+        results = MODE_TO_FUNCTION[parser_mode](session)
+    except Exception as error:
+        error_msg = f'Ошибка в работе функции {error}'
+        logging.error(error_msg)
+        raise ParserDefinitionException(error_msg)
     if results is not None:
         control_output(results, args)
     logging.info('Парсер завершил работу.')
